@@ -1,0 +1,24 @@
+# ignore .env file
+.env
+
+# ignore the venv folder
+venv/
+
+# ignore the .vscode folder
+.vscode/
+
+# ignore the .idea folder
+.idea/
+
+#ignore the local_dbs folder
+local_dbs/
+
+# ignore the db folder
+db/
+
+# ignore python cache files
+__pycache__/
+*.py[cod]
+
+# ignore .venv folder
+.venv/

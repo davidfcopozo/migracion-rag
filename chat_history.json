@@ -1,0 +1,14 @@
+[
+  {
+    "role": "assistant",
+    "content": "¡Haz una pregunta! 👇"
+  },
+  {
+    "role": "user",
+    "content": "¿De qué trata el documento?"
+  },
+  {
+    "role": "assistant",
+    "content": "## 📋 Información\n\nBasado en el contexto proporcionado, el documento en cuestión parece ser un reglamento o ley relacionada con la migración y el control de personas en la República Dominicana. A continuación, se presentan los principales puntos del documento:\n\n**Requisitos para el Enrolamiento y Desenrolamiento de Tripulantes**\n\n* El listado de tripulantes debe incluir los siguientes datos: nombres y apellidos, número de pasaporte, carnet de Gente de Mar (si aplica), nacionalidad y ocupación.\n* Para el enrolamiento, la comunicación debe especificar la procedencia del tripulante, la vía de llegada al país, fecha de salida y vía de salida.\n\n**Control de Entrada y Salida**\n\n* La Dirección General de Migración (D.G.M.) se encargará del control migratorio de entrada y salida en el país.\n* Los extranjeros deben presentar la documentación requerida, incluyendo pasaporte, visado y otros documentos según sea necesario.\n\n**Deportación y No Admisión**\n\n* La D.G.M. puede ordenar la deportación de un extranjero en ciertos casos, como cuando ingrese clandestinamente al país o presente documentos falsos.\n* La no admisión puede ser ordenada en casos como cuando el extranjero no presente la documentación requerida o cuando intenta entrar al país por un lugar no habilitado.\n\n**Otras Obligaciones**\n\n* Las empresas de transporte internacional deben permitir y facilitar el despacho y la inspección de los funcionarios de la D.G.M.\n* Los tripulantes y personal de la dotación del medio de transporte deben presentar la documentación requerida y no permanecer en el país sin la debida autorización.\n\n**Refugiados y Repatriados**\n\n* Un refugiado es considerado aquel que, debido a fundados temores de ser perseguido, se encuentra fuera de su país de nacionalidad y no puede o no quiere regresar a él.\n* Un repatriado es considerado aquel que resulta retornado por autoridades extranjeras en uso de sus facultades soberanas.\n\nEn general, el documento se enfoca en la regulación de la migración y el control de personas en la República Dominicana, estableciendo los requisitos y procedimientos para la entrada y salida del país, así como las obligaciones de las empresas de transporte internacional y los tripulantes.\n\n---\n*Basado en la Ley de Migración de la República Dominicana*"
+  }
+]
