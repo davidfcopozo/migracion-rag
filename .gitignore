@@ -22,3 +22,6 @@ __pycache__/
 
 # ignore .venv folder
 .venv/
+
+# Streamlit secrets (local-only)
+.streamlit/secrets.toml

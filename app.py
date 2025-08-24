@@ -21,7 +21,43 @@ import json
 import re
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load Streamlit secrets and make them available as environment variables
+# Streamlit secrets are automatically loaded from .streamlit/secrets.toml
+def _load_streamlit_secrets():
+    try:
+        # Access st.secrets to ensure they're loaded, but don't fail if no secrets file exists
+        if hasattr(st, 'secrets') and len(st.secrets) > 0:
+            secrets_loaded = 0
+            # Make root-level secrets available as environment variables (if not already set)
+            for key, value in st.secrets.items():
+                if isinstance(value, (str, int, float, bool)) and key.upper() not in os.environ:
+                    os.environ[key.upper()] = str(value)
+                    secrets_loaded += 1
+                    
+            # Handle nested sections by flattening them
+            for section_key, section_value in st.secrets.items():
+                if isinstance(section_value, dict):
+                    for nested_key, nested_value in section_value.items():
+                        env_key = f"{section_key.upper()}_{nested_key.upper()}"
+                        if env_key not in os.environ and isinstance(nested_value, (str, int, float, bool)):
+                            os.environ[env_key] = str(nested_value)
+                            secrets_loaded += 1
+            
+            # Log successful loading (but don't expose secret values)
+            if secrets_loaded > 0:
+                import logging
+                logging.info(f"Loaded {secrets_loaded} secrets from st.secrets into environment")
+                
+    except Exception as e:
+        # st.secrets may not be available yet or no secrets file exists
+        # Fall back to .env loading
+        import logging
+        logging.info(f"st.secrets not available ({e}), falling back to .env")
+
+# Load Streamlit secrets first, then .env as fallback
+_load_streamlit_secrets()
+
+# Load environment variables from .env (keeps already-set envs intact)
 load_dotenv()
 
 # Make HF token available under common env names and try to login early so Streamlit
@@ -238,19 +274,83 @@ if DEPLOYMENT_MODE == "local":
     PERSIST_DIRECTORY = "./local_dbs/migracion_chroma_db"
 else:
     # Cloud configuration (Groq + Pinecone + HuggingFace)
-    MODEL_NAME = os.getenv("GROQ_MODEL", "llama3-8b-8192")
-    EMBEDDING_MODEL_NAME = os.getenv("HUGGINGFACE_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-    PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "rag-index")
-    PINECONE_ENVIRONMENT = os.getenv("PINECONE_ENVIRONMENT", "gcp-starter")
+    # Helper function to safely get values from st.secrets or environment
+    def get_config_value(key, section_key=None, nested_key=None, default=None):
+        """Get configuration value from st.secrets or environment variables"""
+        # Try st.secrets first
+        try:
+            # Try root-level secret
+            if key in st.secrets:
+                return st.secrets[key]
+            # Try nested section if provided
+            if section_key and nested_key and section_key in st.secrets:
+                section = st.secrets[section_key]
+                if isinstance(section, dict) and nested_key in section:
+                    return section[nested_key]
+        except Exception:
+            pass
+        # Fall back to environment variable
+        return os.getenv(key, default)
+    
+    MODEL_NAME = get_config_value("GROQ_MODEL", "groq", "model", "llama3-8b-8192")
+    EMBEDDING_MODEL_NAME = get_config_value("HUGGINGFACE_EMBEDDING_MODEL", "huggingface", "embedding_model", "sentence-transformers/all-MiniLM-L6-v2")
+    PINECONE_INDEX_NAME = get_config_value("PINECONE_INDEX_NAME", "pinecone", "index_name", "migracion")
+    PINECONE_ENVIRONMENT = get_config_value("PINECONE_ENVIRONMENT", "pinecone", "environment", "gcp-starter")
     
     # API Keys validation
-    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-    PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-    HUGGINGFACE_API_TOKEN = os.getenv("HUGGINGFACE_API_TOKEN")
+    GROQ_API_KEY = get_config_value("GROQ_API_KEY")
+    PINECONE_API_KEY = get_config_value("PINECONE_API_KEY")
+    HUGGINGFACE_API_TOKEN = get_config_value("HUGGINGFACE_API_TOKEN")
     
     if not all([GROQ_API_KEY, PINECONE_API_KEY, HUGGINGFACE_API_TOKEN]):
-        st.error("Cloud mode requires GROQ_API_KEY, PINECONE_API_KEY, and HUGGINGFACE_API_TOKEN environment variables")
+        st.error("Cloud mode requires GROQ_API_KEY, PINECONE_API_KEY, and HUGGINGFACE_API_TOKEN. "
+                "Set them in .streamlit/secrets.toml or as environment variables.")
         st.stop()
+    
+    # Debug: Show configuration source (remove in production)
+    with st.expander("🔧 Configuration Debug", expanded=False):
+        st.write("**Deployment Mode:**", DEPLOYMENT_MODE)
+        st.write("**Model Name:**", MODEL_NAME)
+        st.write("**Embedding Model:**", EMBEDDING_MODEL_NAME)
+        st.write("**Pinecone Index:**", PINECONE_INDEX_NAME)
+        st.write("**Pinecone Environment:**", PINECONE_ENVIRONMENT)
+        st.write("**API Keys Present:**")
+        st.write(f"- GROQ_API_KEY: {'✅' if GROQ_API_KEY else '❌'}")
+        st.write(f"- PINECONE_API_KEY: {'✅' if PINECONE_API_KEY else '❌'}")
+        st.write(f"- HUGGINGFACE_API_TOKEN: {'✅' if HUGGINGFACE_API_TOKEN else '❌'}")
+        
+        # Show if values came from st.secrets or environment
+        st.write("**Configuration Sources:**")
+        try:
+            sources = {}
+            for key, display_name in [
+                ("GROQ_MODEL", "Model"),
+                ("PINECONE_INDEX_NAME", "Index"),
+                ("PINECONE_ENVIRONMENT", "Environment"),
+                ("GROQ_API_KEY", "Groq Key"),
+                ("PINECONE_API_KEY", "Pinecone Key"),
+                ("HUGGINGFACE_API_TOKEN", "HF Token")
+            ]:
+                source = "❓"
+                try:
+                    if key in st.secrets:
+                        source = "🔐 st.secrets (root)"
+                    elif key in os.environ:
+                        source = "🌍 environment"
+                    else:
+                        # Check nested sections
+                        for section_name in ["groq", "pinecone", "huggingface"]:
+                            if section_name in st.secrets and isinstance(st.secrets[section_name], dict):
+                                section = st.secrets[section_name]
+                                nested_key = key.lower().replace(f"{section_name}_", "").replace("_api_key", "").replace("_token", "")
+                                if nested_key in section:
+                                    source = f"🔐 st.secrets.{section_name}"
+                                    break
+                except Exception:
+                    pass
+                st.write(f"- {display_name}: {source}")
+        except Exception as e:
+            st.write(f"Could not determine sources: {e}")
 
 def ensure_model_available(model_name):
     """Ensure model availability depending on deployment mode.
